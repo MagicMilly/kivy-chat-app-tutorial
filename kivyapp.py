@@ -4,6 +4,7 @@ from kivy.uix.label import Label
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.textinput import TextInput 
 from kivy.uix.button import Button
+from kivy.uix.screenmanager import Screen, ScreenManager
 import os 
 
 kivy.require("1.10.1")
@@ -29,19 +30,16 @@ class ConnectPage(GridLayout):
 
         # first row
         self.add_widget(Label(text="IP:"))
-
         # box for user input 
         self.ip = TextInput(text=prev_ip, multiline=False)
         self.add_widget(self.ip)
 
         # second row
         self.add_widget(Label(text="Port:"))
-
         self.port = TextInput(text=prev_port, multiline=False)
         self.add_widget(self.port)
 
         self.add_widget(Label(text="Username:"))
-
         self.username = TextInput(text=prev_username, multiline=False)
         self.add_widget(self.username)
 
@@ -59,15 +57,61 @@ class ConnectPage(GridLayout):
         ip = self.ip.text
         username = self.username.text 
 
-        print(f"Attempting to join {ip}:{port} as {username}")
-
         # save information 
         with open("prev_details.txt", "w") as f:
-            f.write(f"{ip}, {port}, {username}")
+            f.write(f"{ip},{port},{username}")
+
+        # debug
+        print("Well we got this far")
+
+        info = f"Attempting to join {ip}:{port} as {username}"
+        chat_app.info_page.update_info(info)
+
+        print("Is anything happening here?")
+
+        # this changes the screen
+        chat_app.screen_manager.current = "Info"
+
+        print("What about here?")
+
+class InfoPage(GridLayout):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.cols = 1
+        # dynamic message - you can put these in a different file (.kv) if you get into a massive app
+        self.message = Label(halign="center", valign="middle", font_size=30)
+        self.message.bind(width=self.update_text_width)
+        self.add_widget(self.message)
+
+    def update_info(self, message):
+        self.message.text = message
+
+    def update_text_width(self, *_):
+        # will take up 90% of page width because that just looks nicer
+        self.message.text_size = (self.message.width * 0.9, None)
 
 class EpicApp(App):
     def build(self):
-        return ConnectPage()
+        # ConnectPage is okay for one screen
+        # return ConnectPage()
+        # now we work with multiple screens! yay!
+        self.screen_manager = ScreenManager()
+
+        self.connect_page = ConnectPage()
+        screen = Screen(name="Connect")
+        screen.add_widget(self.connect_page)
+        self.screen_manager.add_widget(screen)
+
+        # new type of screen
+        self.info_page = InfoPage()
+        screen = Screen(name="Info")
+        screen.add_widget(self.info_page)
+        self.screen_manager.add_widget(screen)
+
+        return self.screen_manager
+
 
 if __name__ == "__main__":
-    EpicApp().run()
+    # name instance variable to reference easily
+    chat_app = EpicApp()
+    chat_app.run()
